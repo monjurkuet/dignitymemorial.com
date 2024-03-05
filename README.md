@@ -1,0 +1,2 @@
+# dignitymemorial.com
+ Crawler for The Dignity Memorial® online obituary search tool gives you access to obituaries from thousands of locations across North America. You can search by first or last name, state and publication date. Once you find the obituary you are looking for, you can get important information about upcoming services, share a favorite photo or memory, and send flowers or gifts to the family.
