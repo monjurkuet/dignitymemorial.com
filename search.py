@@ -3,6 +3,8 @@ from bs4 import BeautifulSoup
 from datetime import datetime
 import time
 import random
+import pandas as pd
+
 headers = {
     'authority': 'www.dignitymemorial.com',
     'accept': '*/*',
@@ -18,13 +20,12 @@ headers = {
     'x-requested-with': 'XMLHttpRequest',
 }
 
-
 start=0
 request_url='https://www.dignitymemorial.com/en//obituaries/ObituariesSearch/More?varQuery=q%3D(and%20(and%20%27%27)%20(or%20locationstate%3A%27CA%27)%20(or%20cmicreationdate%3A%5B%272024-02-20T00%3A00%3A00Z%27%2C%7D)%20%20%20)%26start%3D{}%26size%3D20%26filtergroup%3Dcmicreationdate%26filtervalue%3Dnull%26filterchecked%3Dfalse%26grave%3Dfalse&grave=false'
 
 final_data=[]
-
-while True:
+retrycounter=0
+while True and retrycounter<3:
     response = requests.get(request_url.format(start)
         ,
         headers=headers,
@@ -32,15 +33,30 @@ while True:
     soup = BeautifulSoup(response.text, 'html.parser')
     # Find all elements with the class "obit-result-container"
     obit_containers = soup.find_all('div', class_='obit-result-container')
+    if not obit_containers:
+        retrycounter+=1
     for each_line in obit_containers:
-        obit_text = each_line.find_all('p')[-1].text.strip()
-        split_text=obit_text.split(',')
-        name=split_text[0]
-        Age=split_text[1].split(' ')[-1]
-        city=split_text[2].split('of')[-1].strip()+', '+split_text[3].split('passed')[0].strip()
-        updatedAt=datetime.now()
-        data={'name':name,'Age':Age,'city':city,'updatedAt':updatedAt}
-        final_data.append(data)
-        print(data)
+        try:
+            obit_text = each_line.find_all('p')[-1].text.strip()
+            split_text=obit_text.split(',')
+            name=split_text[0]
+            if 'años' in each_line.text:
+                Age=split_text[1].split(' ')[1]
+                city=None
+            else:
+                Age=split_text[1].split('age')[1].split(' ')[1]
+            if ', of' in each_line.text:
+                city=split_text[2].split('of')[-1].strip()+', '+split_text[3].split('passed')[0].strip()
+            else:
+                city=None
+            updatedAt=datetime.now()
+            data={'name':name,'Age':Age,'city':city,'updatedAt':updatedAt,'obit_text':obit_text}
+            final_data.append(data)
+            print(data)
+        except:
+            pass
     start+=10
     time.sleep(random.uniform(2,5))
+
+df = pd.DataFrame.from_dict(final_data)
+df.to_excel('data.xlsx')
