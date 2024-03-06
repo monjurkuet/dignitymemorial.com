@@ -4,6 +4,7 @@ from datetime import datetime
 import time
 import random
 import pandas as pd
+from datetime import datetime
 
 headers = {
     'authority': 'www.dignitymemorial.com',
@@ -25,39 +26,57 @@ request_url='https://www.dignitymemorial.com/en//obituaries/ObituariesSearch/Mor
 
 final_data=[]
 retrycounter=0
+
+print("Scraping obituaries...")
+
+
 while True and retrycounter<20:
     response = requests.get(request_url.format(start)
         ,
         headers=headers,
     )
-    soup = BeautifulSoup(response.text, 'html.parser')
-    # Find all elements with the class "obit-result-container"
-    obit_containers = soup.find_all('div', class_='obit-result-container')
-    if not obit_containers:
-        retrycounter+=1
-    for each_line in obit_containers:
-        try:
-            obit_text = each_line.find_all('p')[-1].text.strip()
-            split_text=obit_text.split(',')
-            name=split_text[0]
-            if 'años' in each_line.text:
-                Age=split_text[1].split(' ')[1]
-                city=None
-            else:
-                Age=split_text[1].split('age')[1].split(' ')[1]
-            if ', of' in each_line.text:
-                #city=split_text[2].split('of')[-1].strip()+', '+split_text[3].split('passed')[0].strip()
-                city=split_text[2].split('of')[-1].strip()
-            else:
-                city=None
-            updatedAt=datetime.now()
-            data={'name':name,'Age':int(Age),'city':city,'updatedAt':updatedAt}
-            final_data.append(data)
-            print(data)
-        except:
-            pass
-    start+=10
+    if response.status_code!=200:
+        retrycounter-=1
+    else:
+        soup = BeautifulSoup(response.text, 'html.parser')
+        # Find all elements with the class "obit-result-container"
+        obit_containers = soup.find_all('div', class_='obit-result-container')
+        if not obit_containers:
+            retrycounter+=1
+        else:
+            for each_line in obit_containers:
+                try:
+                    obit_text = each_line.find_all('p')[-1].text.strip()
+                    split_text=obit_text.split(',')
+                    name=split_text[0]
+                    if 'años' in each_line.text:
+                        Age=split_text[1].split(' ')[1]
+                        city=None
+                    else:
+                        Age=split_text[1].split('age')[1].split(' ')[1]
+                    if ', of' in each_line.text:
+                        #city=split_text[2].split('of')[-1].strip()+', '+split_text[3].split('passed')[0].strip()
+                        city=split_text[2].split('of')[-1].strip()
+                    else:
+                        city=None
+                    updatedAt=datetime.now()
+                    data={'name':name,'Age':int(Age),'city':city,'updatedAt':updatedAt}
+                    final_data.append(data)
+                    print(f"Scraped: {data}")
+                except:
+                    pass
+        start+=10
     time.sleep(random.uniform(2,5))
 
+# Modify the filename to include today's date
+today_date_str = datetime.now().strftime("%Y%m%d")
+output_file = f'data_{today_date_str}.xlsx'
+
 df = pd.DataFrame.from_dict(final_data)
-df.to_excel('data.xlsx')
+# Save the DataFrame to the Excel file with today's date in the filename
+try:
+    # Save the DataFrame to the Excel file with today's date in the filename
+    df.to_excel(output_file, index=False)
+    print(f'Data saved to {output_file}')
+except Exception as e:
+    print(f"Error saving data to Excel file: {e}")
