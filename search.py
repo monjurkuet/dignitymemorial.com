@@ -25,7 +25,7 @@ request_url='https://www.dignitymemorial.com/en//obituaries/ObituariesSearch/Mor
 
 final_data=[]
 retrycounter=0
-while True and retrycounter<3:
+while True and retrycounter<20:
     response = requests.get(request_url.format(start)
         ,
         headers=headers,
@@ -46,11 +46,12 @@ while True and retrycounter<3:
             else:
                 Age=split_text[1].split('age')[1].split(' ')[1]
             if ', of' in each_line.text:
-                city=split_text[2].split('of')[-1].strip()+', '+split_text[3].split('passed')[0].strip()
+                #city=split_text[2].split('of')[-1].strip()+', '+split_text[3].split('passed')[0].strip()
+                city=split_text[2].split('of')[-1].strip()
             else:
                 city=None
             updatedAt=datetime.now()
-            data={'name':name,'Age':Age,'city':city,'updatedAt':updatedAt,'obit_text':obit_text}
+            data={'name':name,'Age':int(Age),'city':city,'updatedAt':updatedAt}
             final_data.append(data)
             print(data)
         except:
